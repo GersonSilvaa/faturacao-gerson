@@ -5,12 +5,8 @@ import math
 import io
 
 # ----- Gestor de Utilizadores -----
-utilizadores = {
-    "gerson": "gerson123",
-    "filipe": "filipe123",
-    "catarina": "catarina123",
-    "andre": "andre123"
-}
+import json
+utilizadores = json.loads(st.secrets["utilizadores"])
 
 # ----- Funções auxiliares -----
 def verificar_login():
