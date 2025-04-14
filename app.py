@@ -8,7 +8,7 @@ import io
 utilizadores = {
     "gerson": "gerson123",
     "filipe": "filipe123",
-    "catarina": "catarina123"
+    "catarina": "catarina123",
     "andre": "andre123"
 }
 
