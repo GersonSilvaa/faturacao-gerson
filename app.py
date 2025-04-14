@@ -102,10 +102,10 @@ def exportar_divergencias(df, referencia):
             'Categoria de Veículo': 'Categoria de Veículo'
         })
         divergencias = divergencias.merge(
-            referencia[['Matricula', 'Marca', 'Modelo', 'Categoria de Veículo']],
+            referencia[['Matrícula', 'Marca', 'Modelo', 'Categoria de Veículo']],
             how='left',
-            left_on='Matricula',
-            right_on='Matricula'
+            left_on='Matrícula',
+            right_on='Matrícula'
         )
 
     output = io.BytesIO()
@@ -162,7 +162,7 @@ else:
     if referencia_file:
         referencia_df = processar_ficheiro(
             referencia_file,
-            colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
+            colunas_obrigatorias=["Matrícula", "Marca", "Modelo", "Categoria de Veículo"]
         )
         if referencia_df is not None:
             st.write("Pré-visualização do ficheiro de referência:")
