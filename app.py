@@ -3,9 +3,9 @@ import pandas as pd
 from datetime import datetime
 import math
 import io
+import json
 
 # ----- Gestor de Utilizadores -----
-import json
 utilizadores = json.loads(st.secrets["utilizadores"])
 
 # ----- Funções auxiliares -----
@@ -82,8 +82,8 @@ def exportar_divergencias(df):
             return "Sim"
         return "Não"
 
-    divergencias['Data_IPA'] = pd.to_datetime(divergencias['Data_IPA'], errors='coerce')
-    divergencias['Agravamento'] = divergencias['Data_IPA'].apply(verificar_agravamento)
+    divergencias['Data_Requisicao'] = pd.to_datetime(divergencias['Data_Requisicao'], errors='coerce')
+    divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
     total_agravados = divergencias['Agravamento'].value_counts().get("Sim", 0)
 
     output = io.BytesIO()
@@ -93,10 +93,15 @@ def exportar_divergencias(df):
     workbook = writer.book
     worksheet = writer.sheets['Divergencias']
 
-    format_agravado = workbook.add_format({'bg_color': '#FFC7CE'})
+    format_agravado = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo
+
+    # Encontrar coluna "Agravamento"
+    headers = list(divergencias.columns)
+    col_agravamento_idx = headers.index("Agravamento")
+
     for row_num, agravamento in enumerate(divergencias['Agravamento'], start=1):
         if agravamento == "Sim":
-            worksheet.set_row(row_num, cell_format=format_agravado)
+            worksheet.write(row_num, col_agravamento_idx, agravamento, format_agravado)
 
     last_row = len(divergencias) + 2
     worksheet.write(f'A{last_row}', 'Total de processos com agravamento:')
