@@ -4,12 +4,20 @@ from datetime import datetime
 import math
 import io
 
+# ----- Gestor de Utilizadores -----
+utilizadores = {
+    "gerson": "gerson123",
+    "filipe": "filipe123",
+    "catarina": "catarina123"
+    "andre": "andre123"
+}
+
 # ----- Funções auxiliares -----
 def verificar_login():
     user = st.text_input("Utilizador")
     password = st.text_input("Password", type="password")
     if st.button("Entrar"):
-        if user == "gerson" and password == "1234":  # Aqui depois podemos melhorar
+        if user in utilizadores and utilizadores[user] == password:
             st.session_state['login'] = True
             st.success("Login feito com sucesso!")
         else:
@@ -27,13 +35,9 @@ def processar_ficheiro(uploaded_file):
 
 
 def exportar_listas(prontos_faturar, num_listas):
-    # Ordenar por match_key
     prontos_faturar = prontos_faturar.sort_values(by='match_key')
-
-    # Preparar Excel na memória
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-
     workbook = writer.book
     worksheet = workbook.add_worksheet('Listas')
     writer.sheets['Listas'] = worksheet
@@ -75,7 +79,6 @@ def exportar_listas(prontos_faturar, num_listas):
 def exportar_divergencias(df):
     divergencias = df[df['Diferenca'] != 0].copy()
 
-    # Criar coluna de agravamento
     def verificar_agravamento(data):
         if pd.isna(data):
             return "Não"
@@ -85,11 +88,8 @@ def exportar_divergencias(df):
 
     divergencias['Data_IPA'] = pd.to_datetime(divergencias['Data_IPA'], errors='coerce')
     divergencias['Agravamento'] = divergencias['Data_IPA'].apply(verificar_agravamento)
-
-    # Contar agravamentos
     total_agravados = divergencias['Agravamento'].value_counts().get("Sim", 0)
 
-    # Preparar Excel na memória
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     divergencias.to_excel(writer, index=False, sheet_name='Divergencias')
@@ -97,13 +97,11 @@ def exportar_divergencias(df):
     workbook = writer.book
     worksheet = writer.sheets['Divergencias']
 
-    # Formatação para linhas com agravamento
     format_agravado = workbook.add_format({'bg_color': '#FFC7CE'})
     for row_num, agravamento in enumerate(divergencias['Agravamento'], start=1):
         if agravamento == "Sim":
             worksheet.set_row(row_num, cell_format=format_agravado)
 
-    # Escrever total de agravados no fim
     last_row = len(divergencias) + 2
     worksheet.write(f'A{last_row}', 'Total de processos com agravamento:')
     worksheet.write(f'B{last_row}', total_agravados)
