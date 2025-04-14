@@ -160,10 +160,13 @@ else:
 
     referencia_df = None
     if referencia_file:
-    referencia_df = processar_ficheiro(
-        referencia_file,
-        colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
-    )
+        referencia_df = processar_ficheiro(
+            referencia_file,
+            colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
+        )
+        if referencia_df is not None:
+            st.write("Pré-visualização do ficheiro de referência:")
+            st.dataframe(referencia_df.head())
 
     if uploaded_file:
         df = processar_ficheiro(uploaded_file)
@@ -196,9 +199,12 @@ else:
             else:
                 st.warning("Não existem processos prontos a faturar neste ficheiro.")
 
-            if st.button("Exportar Divergências para Análise"):
-                output, filename = exportar_divergencias(df, referencia_df)
-                st.download_button("Descarregar Excel das Divergências", data=output, file_name=filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            if referencia_df is not None:
+                if st.button("Exportar Divergências para Análise"):
+                    output, filename = exportar_divergencias(df, referencia_df)
+                    st.download_button("Descarregar Excel das Divergências", data=output, file_name=filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            else:
+                st.warning("Carrega primeiro o ficheiro de referência para exportar divergências!")
 
     else:
         st.info("Aguardo o carregamento do ficheiro Excel de comparação.")
