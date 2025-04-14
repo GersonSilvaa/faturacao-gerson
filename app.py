@@ -102,10 +102,10 @@ def exportar_divergencias(df, referencia):
             'Categoria de Veículo': 'Categoria de Veículo'
         })
         divergencias = divergencias.merge(
-            referencia[['Matrícula', 'Marca', 'Modelo', 'Categoria de Veículo']],
+            referencia[['Matricula', 'Marca', 'Modelo', 'Categoria de Veículo']],
             how='left',
-            left_on='Matrícula',
-            right_on='Matrícula'
+            left_on='Matricula',
+            right_on='Matricula'
         )
 
     output = io.BytesIO()
@@ -155,14 +155,14 @@ else:
     st.subheader("Upload do Ficheiro de Comparação")
     uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"])
 
-    st.subheader("Upload do Ficheiro de Referência (Matrículas + Marca/Modelo/Categoria)")
+    st.subheader("Upload do Ficheiro de Referência (Matriculas + Marca/Modelo/Categoria)")
     referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"])
 
     referencia_df = None
     if referencia_file:
         referencia_df = processar_ficheiro(
             referencia_file,
-            colunas_obrigatorias=["Matrícula", "Marca", "Modelo", "Categoria de Veículo"]
+            colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
         )
         if referencia_df is not None:
             st.write("Pré-visualização do ficheiro de referência:")
