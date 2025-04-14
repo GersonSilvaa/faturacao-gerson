@@ -6,7 +6,7 @@ import io
 import json
 
 # ----- Gestor de Utilizadores -----
-utilizadores = json.loads(st.secrets["utilizadores"])
+utilizadores = st.secrets["utilizadores"]
 
 # ----- Funções auxiliares -----
 def verificar_login():
