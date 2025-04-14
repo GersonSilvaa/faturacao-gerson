@@ -20,10 +20,19 @@ def verificar_login():
             st.error("Credenciais inválidas!")
 
 
-def processar_ficheiro(uploaded_file):
+def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
+        df.columns = df.columns.str.strip()  # Limpa espaços em branco nos nomes das colunas
         st.success("Ficheiro carregado com sucesso!")
+
+        # Verificação de colunas obrigatórias
+        if colunas_obrigatorias:
+            colunas_em_falta = [col for col in colunas_obrigatorias if col not in df.columns]
+            if colunas_em_falta:
+                st.error(f"Atenção! O ficheiro está a faltar as colunas: {', '.join(colunas_em_falta)}")
+                return None
+
         return df
     else:
         st.warning("Por favor, carrega o ficheiro Excel.")
@@ -151,7 +160,10 @@ else:
 
     referencia_df = None
     if referencia_file:
-        referencia_df = processar_ficheiro(referencia_file)
+    referencia_df = processar_ficheiro(
+        referencia_file,
+        colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
+    )
 
     if uploaded_file:
         df = processar_ficheiro(uploaded_file)
