@@ -72,7 +72,7 @@ def exportar_listas(prontos_faturar, num_listas):
     return output, f"Listagem_Para_Faturar_{data_atual}.xlsx"
 
 
-def exportar_divergencias(df):
+def exportar_divergencias(df, referencia):
     divergencias = df[df['Diferenca'] != 0].copy()
 
     def verificar_agravamento(data):
@@ -84,7 +84,20 @@ def exportar_divergencias(df):
 
     divergencias['Data_Requisicao'] = pd.to_datetime(divergencias['Data_Requisicao'], errors='coerce')
     divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
-    total_agravados = divergencias['Agravamento'].value_counts().get("Sim", 0)
+
+    # Cruzar com a referência para buscar Marca, Modelo e Categoria
+    if referencia is not None:
+        referencia = referencia.rename(columns={
+            'Marca': 'Marca',
+            'Modelo': 'Modelo',
+            'Categoria de Veículo': 'Categoria de Veículo'
+        })
+        divergencias = divergencias.merge(
+            referencia[['Matricula', 'Marca', 'Modelo', 'Categoria de Veículo']],
+            how='left',
+            left_on='Matricula',
+            right_on='Matricula'
+        )
 
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
@@ -94,18 +107,24 @@ def exportar_divergencias(df):
     worksheet = writer.sheets['Divergencias']
 
     format_agravado = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo
+    format_faltante = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo para células em falta
 
-    # Encontrar coluna "Agravamento"
     headers = list(divergencias.columns)
     col_agravamento_idx = headers.index("Agravamento")
 
+    # Destacar agravamento
     for row_num, agravamento in enumerate(divergencias['Agravamento'], start=1):
         if agravamento == "Sim":
             worksheet.write(row_num, col_agravamento_idx, agravamento, format_agravado)
 
-    last_row = len(divergencias) + 2
-    worksheet.write(f'A{last_row}', 'Total de processos com agravamento:')
-    worksheet.write(f'B{last_row}', total_agravados)
+    # Destacar células em falta nas novas colunas
+    for row_num, row in divergencias.iterrows():
+        if pd.isna(row.get('Marca')):
+            worksheet.write(row_num + 1, headers.index('Marca'), '', format_faltante)
+        if pd.isna(row.get('Modelo')):
+            worksheet.write(row_num + 1, headers.index('Modelo'), '', format_faltante)
+        if pd.isna(row.get('Categoria de Veículo')):
+            worksheet.write(row_num + 1, headers.index('Categoria de Veículo'), '', format_faltante)
 
     writer.close()
     output.seek(0)
@@ -125,13 +144,20 @@ if not st.session_state['login']:
     verificar_login()
 else:
     st.subheader("Upload do Ficheiro de Comparação")
-    uploaded_file = st.file_uploader("Escolhe o ficheiro Excel", type=["xlsx"])
+    uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"])
+
+    st.subheader("Upload do Ficheiro de Referência (Matrículas + Marca/Modelo/Categoria)")
+    referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"])
+
+    referencia_df = None
+    if referencia_file:
+        referencia_df = processar_ficheiro(referencia_file)
 
     if uploaded_file:
         df = processar_ficheiro(uploaded_file)
 
         if df is not None:
-            st.write("Pré-visualização dos dados:")
+            st.write("Pré-visualização dos dados de comparação:")
             st.dataframe(df.head())
 
             prontos_faturar = df[df['Diferenca'] == 0]
@@ -159,8 +185,8 @@ else:
                 st.warning("Não existem processos prontos a faturar neste ficheiro.")
 
             if st.button("Exportar Divergências para Análise"):
-                output, filename = exportar_divergencias(df)
+                output, filename = exportar_divergencias(df, referencia_df)
                 st.download_button("Descarregar Excel das Divergências", data=output, file_name=filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     else:
-        st.info("Aguardo o carregamento do ficheiro Excel.")
+        st.info("Aguardo o carregamento do ficheiro Excel de comparação.")
