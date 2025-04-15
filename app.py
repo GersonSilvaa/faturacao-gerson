@@ -27,7 +27,6 @@ def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
             df.columns = df.columns.str.strip()  # Limpa espaços em branco nos nomes das colunas
             st.success("Ficheiro carregado com sucesso!")
 
-            # Verificação de colunas obrigatórias (se for fornecida a lista)
             if colunas_obrigatorias:
                 colunas_em_falta = [col for col in colunas_obrigatorias if col not in df.columns]
                 if colunas_em_falta:
@@ -35,14 +34,83 @@ def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
                     return None
 
             return df
-        except Exception as e:
-            # Se der erro ao ler o Excel (ficheiro corrompido ou não Excel)
+        except Exception:
             st.error("Erro ao ler o ficheiro. Verifica se é um ficheiro Excel válido (.xlsx).")
             return None
     else:
         st.warning("Por favor, carrega o ficheiro Excel.")
         return None
 
+
+# ----- Funções de Cálculo -----
+
+def calcular_valor_categoria(categoria, kms, agravamento):
+    """
+    Calcula o valor a faturar para Furgão ou Rodado Duplo,
+    de acordo com as regras definidas:
+      - Furgão = 30€ + 0.40€/km, +25% se agravamento
+      - Rodado Duplo = 42€ + 0.58€/km, +25% se agravamento
+      - Qualquer outra categoria = 0 (neste caso não calculamos)
+    """
+    if pd.isna(kms):
+        return 0.0
+
+    valor = 0.0
+    if categoria == 'Furgão':
+        valor = 30 + (0.40 * kms)
+    elif categoria == 'Rodado Duplo':
+        valor = 42 + (0.58 * kms)
+    else:
+        # Se for Ligeiro ou outra, devolvemos zero aqui
+        # (pois só nos importa Furgão/Rodado Duplo para o upgrade)
+        valor = 0
+
+    if agravamento == 'Sim':
+        valor *= 1.25  # +25%
+
+    return valor
+
+
+def calcular_upgrade(row):
+    """
+    Se 'Categoria de Veículo' for 'Ligeiro', testa Furgão.
+    Se for 'Furgão', testa Rodado Duplo.
+    Caso contrário, fica sem upgrade.
+    Retorna (valor_potencial, diferenca, sugestao).
+    """
+    cat_atual = row.get('Categoria de Veículo')
+    kms = row.get('KMS a Faturar no Serviço')
+    agravamento = row.get('Agravamento', 'Não')
+    valor_base = row.get('Valor a Faturar S/IVA', 0.0)
+
+    if pd.isna(valor_base):
+        valor_base = 0.0
+
+    # Ligeiro -> Furgão
+    if cat_atual == 'Ligeiro':
+        valor_pot = calcular_valor_categoria('Furgão', kms, agravamento)
+        dif = valor_pot - valor_base
+        if dif > 0:
+            return (valor_pot,
+                    dif,
+                    f"Analisar upgrade p/ Furgão (+{dif:.2f}€)")
+        else:
+            return (valor_pot, dif, "")
+    # Furgão -> Rodado Duplo
+    elif cat_atual == 'Furgão':
+        valor_pot = calcular_valor_categoria('Rodado Duplo', kms, agravamento)
+        dif = valor_pot - valor_base
+        if dif > 0:
+            return (valor_pot,
+                    dif,
+                    f"Analisar upgrade p/ Rodado Duplo (+{dif:.2f}€)")
+        else:
+            return (valor_pot, dif, "")
+    else:
+        # Se já for Rodado Duplo ou outra coisa, não sugerimos upgrade
+        return (0.0, 0.0, "")
+
+# ----- Exportações -----
 
 def exportar_listas(prontos_faturar, num_listas):
     prontos_faturar = prontos_faturar.sort_values(by='match_key')
@@ -87,8 +155,15 @@ def exportar_listas(prontos_faturar, num_listas):
 
 
 def exportar_divergencias(df, referencia):
+    """Exporta os processos com diferenca != 0, adicionando:
+       - Marca, Modelo, Categoria de Veículo, KMS a Faturar no Serviço,
+         Valor a Faturar S/IVA (vindas do ficheiro de referência)
+       - Coluna Agravamento
+       - Colunas Valor Potencial, Diferença Upgrade, Sugestão Upgrade
+    """
     divergencias = df[df['Diferenca'] != 0].copy()
 
+    # Determinar Agravamento
     def verificar_agravamento(data):
         if pd.isna(data):
             return "Não"
@@ -99,17 +174,32 @@ def exportar_divergencias(df, referencia):
     divergencias['Data_Requisicao'] = pd.to_datetime(divergencias['Data_Requisicao'], errors='coerce')
     divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
 
-    # Cruzar com a referência para buscar Marca, Modelo e Categoria
+    # Merge com o ficheiro de referência
     if referencia is not None:
-        # Avisa se nas colunas do df principal não existir 'Matricula' (sem acento) ou no ref for 'Matrícula' (com acento)
-        # e ajusta caso seja necessário
+        # Ajustar se o teu ficheiro de referência tiver nomes diferentes
+        # (Aqui estamos a assumir que existem estas colunas exatas)
+        colunas_ref = [
+            'Matrícula',
+            'Marca',
+            'Modelo',
+            'Categoria de Veículo',
+            'KMS a Faturar no Serviço',
+            'Valor a Faturar S/IVA'
+        ]
         divergencias = divergencias.merge(
-            referencia[['Matrícula', 'Marca', 'Modelo', 'Categoria de Veículo']],
+            referencia[colunas_ref],
             how='left',
-            left_on='Matricula',   # na divergencia base chama-se 'Matricula' (sem acento)
-            right_on='Matrícula'   # na referência chama-se 'Matrícula' (com acento)
+            left_on='Matricula',   # no DF base: 'Matricula'
+            right_on='Matrícula'   # no ref: 'Matrícula'
         )
 
+        # Calcular Valor Potencial / Diferença / Sugestão
+        divergencias[['Valor Potencial', 'Diferença Upgrade', 'Sugestão Upgrade']] = divergencias.apply(
+            lambda row: pd.Series(calcular_upgrade(row)),
+            axis=1
+        )
+
+    # Construir Excel
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     divergencias.to_excel(writer, index=False, sheet_name='Divergencias')
@@ -118,17 +208,18 @@ def exportar_divergencias(df, referencia):
     worksheet = writer.sheets['Divergencias']
 
     format_agravado = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo
-    format_faltante = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo para células em falta
+    format_faltante = workbook.add_format({'bg_color': '#FFFF00'})  # Amarelo
 
     headers = list(divergencias.columns)
-    col_agravamento_idx = headers.index("Agravamento")
 
-    # Destacar agravamento
-    for row_num, agravamento in enumerate(divergencias['Agravamento'], start=1):
-        if agravamento == "Sim":
-            worksheet.write(row_num, col_agravamento_idx, agravamento, format_agravado)
+    # Destacar Agravamento
+    if "Agravamento" in headers:
+        col_agravamento_idx = headers.index("Agravamento")
+        for row_num, valor_agrav in enumerate(divergencias['Agravamento'], start=1):
+            if valor_agrav == "Sim":
+                worksheet.write(row_num, col_agravamento_idx, valor_agrav, format_agravado)
 
-    # Destacar células em falta nas novas colunas
+    # Destacar células em falta
     for row_num, row_data in divergencias.iterrows():
         if 'Marca' in headers and pd.isna(row_data.get('Marca')):
             worksheet.write(row_num + 1, headers.index('Marca'), '', format_faltante)
@@ -136,10 +227,13 @@ def exportar_divergencias(df, referencia):
             worksheet.write(row_num + 1, headers.index('Modelo'), '', format_faltante)
         if 'Categoria de Veículo' in headers and pd.isna(row_data.get('Categoria de Veículo')):
             worksheet.write(row_num + 1, headers.index('Categoria de Veículo'), '', format_faltante)
+        if 'KMS a Faturar no Serviço' in headers and pd.isna(row_data.get('KMS a Faturar no Serviço')):
+            worksheet.write(row_num + 1, headers.index('KMS a Faturar no Serviço'), '', format_faltante)
+        if 'Valor a Faturar S/IVA' in headers and pd.isna(row_data.get('Valor a Faturar S/IVA')):
+            worksheet.write(row_num + 1, headers.index('Valor a Faturar S/IVA'), '', format_faltante)
 
     writer.close()
     output.seek(0)
-
     data_atual = datetime.now().strftime("%Y-%m-%d")
     return output, f"Listagem_Divergencias_{data_atual}.xlsx"
 
@@ -154,17 +248,26 @@ if not st.session_state['login']:
     st.subheader("Login de Acesso")
     verificar_login()
 else:
+    # Upload do ficheiro de comparação
     st.subheader("Upload do Ficheiro de Comparação")
     uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"])
 
-    st.subheader("Upload do Ficheiro de Referência (Matrículas + Marca/Modelo/Categoria)")
+    # Upload do ficheiro de referência
+    st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
     referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"])
 
     referencia_df = None
     if referencia_file:
         referencia_df = processar_ficheiro(
             referencia_file,
-            colunas_obrigatorias=["Matrícula", "Marca", "Modelo", "Categoria de Veículo"]
+            colunas_obrigatorias=[
+                "Matrícula",
+                "Marca",
+                "Modelo",
+                "Categoria de Veículo",
+                "KMS a Faturar no Serviço",
+                "Valor a Faturar S/IVA"
+            ]
         )
         if referencia_df is not None:
             st.write("Pré-visualização do ficheiro de referência:")
@@ -192,11 +295,22 @@ else:
                 for sugestao in sugestoes:
                     st.write("- ", sugestao)
 
-                num_listas = st.number_input("Escolhe o número de listas que queres gerar:", min_value=1, max_value=total_processos, value=1, step=1)
+                num_listas = st.number_input(
+                    "Escolhe o número de listas que queres gerar:",
+                    min_value=1,
+                    max_value=total_processos,
+                    value=1,
+                    step=1
+                )
 
                 if st.button("Exportar Listas para Faturação"):
                     output, filename = exportar_listas(prontos_faturar, int(num_listas))
-                    st.download_button("Descarregar Excel das Listas", data=output, file_name=filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    st.download_button(
+                        "Descarregar Excel das Listas",
+                        data=output,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
             else:
                 st.warning("Não existem processos prontos a faturar neste ficheiro.")
@@ -205,7 +319,12 @@ else:
             if referencia_df is not None:
                 if st.button("Exportar Divergências para Análise"):
                     output, filename = exportar_divergencias(df, referencia_df)
-                    st.download_button("Descarregar Excel das Divergências", data=output, file_name=filename, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    st.download_button(
+                        "Descarregar Excel das Divergências",
+                        data=output,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
             else:
                 st.warning("Carrega primeiro o ficheiro de referência para exportar divergências!")
 
