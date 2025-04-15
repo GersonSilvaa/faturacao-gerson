@@ -1,7 +1,9 @@
 # export_helpers.py
 import pandas as pd
 import io
+import xlsxwriter
 from datetime import datetime
+from utils import PALAVRAS_SUSPEITAS, FIDELIDADE_COLUNAS_EXTRA, contem_texto_suspeito
 
 
 def exportar_listas(prontos_faturar, num_listas):
@@ -115,3 +117,34 @@ def exportar_divergencias(df, referencia):
     output.seek(0)
     data_atual = datetime.now().strftime("%Y-%m-%d")
     return output, f"Listagem_Divergencias_{data_atual}.xlsx"
+
+# -- EXPORTAÇÃO DE EXCEL DA FIDELIDADE COM FORMATACAO
+def exportar_fidelidade_excel(df):
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Fidelidade')
+
+    workbook = writer.book
+    worksheet = writer.sheets['Fidelidade']
+
+    amarelo = workbook.add_format({'bg_color': '#FFFF00'})
+    colunas = list(df.columns)
+
+    for row_idx, row in df.iterrows():
+        marcar = False
+        for col_name in FIDELIDADE_COLUNAS_EXTRA:
+            if col_name in colunas:
+                valor = str(row.get(col_name, "")).lower()
+                if any(p in valor for p in PALAVRAS_SUSPEITAS):
+                    col_idx = colunas.index(col_name)
+                    worksheet.write(row_idx + 1, col_idx, row[col_name], amarelo)
+                    marcar = True
+
+        # Se houver correspondência, marca também a matrícula
+        if marcar and 'Matrícula' in colunas:
+            col_idx = colunas.index('Matrícula')
+            worksheet.write(row_idx + 1, col_idx, row['Matrícula'], amarelo)
+
+    writer.close()
+    output.seek(0)
+    return output, "Analise_Fidelidade_Formatado.xlsx"
