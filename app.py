@@ -48,25 +48,28 @@ def calcular_valor_categoria(categoria, kms, agravamento):
     """
     Calcula o valor a faturar para Furgão ou Rodado Duplo,
     de acordo com as regras definidas:
-      - Furgão = 30€ + 0.40€/km, +25% se agravamento
-      - Rodado Duplo = 42€ + 0.58€/km, +25% se agravamento
-      - Qualquer outra categoria = 0 (neste caso não calculamos)
+      - Furgão: 30€ (fixo) + 0.40€/km acima dos 20km, +25% se agravamento
+      - Rodado Duplo: 42€ (fixo) + 0.58€/km acima dos 20km, +25% se agravamento
     """
     if pd.isna(kms):
         return 0.0
 
     valor = 0.0
     if categoria == 'Furgão':
-        valor = 30 + (0.40 * kms)
+        if kms <= 20:
+            valor = 30
+        else:
+            valor = 30 + (0.40 * (kms - 20))
     elif categoria == 'Rodado Duplo':
-        valor = 42 + (0.58 * kms)
+        if kms <= 20:
+            valor = 42
+        else:
+            valor = 42 + (0.58 * (kms - 20))
     else:
-        # Se for Ligeiro ou outra, devolvemos zero aqui
-        # (pois só nos importa Furgão/Rodado Duplo para o upgrade)
         valor = 0
 
     if agravamento == 'Sim':
-        valor *= 1.25  # +25%
+        valor *= 1.25
 
     return valor
 
