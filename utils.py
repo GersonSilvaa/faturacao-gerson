@@ -33,23 +33,26 @@ def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
         st.warning("Por favor, carrega o ficheiro Excel.")
         return None
 
-def calcular_valor_categoria(categoria, kms, agravamento):
+def calcular_valor_categoria(categoria, kms, agravamento, tabela='IPA'):
     if pd.isna(kms):
         return 0.0
 
     valor = 0.0
-    if categoria == 'Furgão':
-        if kms <= 20:
-            valor = 30
-        else:
-            valor = 30 + (0.40 * (kms - 20))
-    elif categoria == 'Rodado Duplo':
-        if kms <= 20:
-            valor = 42
-        else:
-            valor = 42 + (0.58 * (kms - 20))
-    else:
-        valor = 0
+
+    if tabela == 'IPA':
+        if categoria == 'Furgão':
+            if kms <= 20:
+                valor = 30
+            else:
+                valor = 30 + (0.40 * (kms - 20))
+        elif categoria == 'Rodado Duplo':
+            if kms <= 20:
+                valor = 42
+            else:
+                valor = 42 + (0.58 * (kms - 20))
+    elif tabela == 'FIDELIDADE':
+        # Aqui poderás definir regras específicas da Fidelidade no futuro
+        pass
 
     if agravamento == 'Sim':
         valor *= 1.25
