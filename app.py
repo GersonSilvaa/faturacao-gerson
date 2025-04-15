@@ -12,10 +12,12 @@ utilizadores = st.secrets["utilizadores"]
 def verificar_login():
     user = st.text_input("Utilizador")
     password = st.text_input("Password", type="password")
-    if st.button("Entrar"):
+    login_button = st.button("Entrar")
+
+    if login_button:
         if user in utilizadores and utilizadores[user] == password:
             st.session_state['login'] = True
-            st.success("Login feito com sucesso!")
+            st.rerun()  # força o reload com o login feito
         else:
             st.error("Credenciais inválidas!")
 
