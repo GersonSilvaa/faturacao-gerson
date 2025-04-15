@@ -244,7 +244,7 @@ def exportar_divergencias(df, referencia):
 
 
 # ----- Início da aplicação -----
-st.title("Gestão de Faturação - IPA 🚛")
+st.title("Gestão de Faturação - 🚛")
 
 if 'login' not in st.session_state:
     st.session_state['login'] = False
