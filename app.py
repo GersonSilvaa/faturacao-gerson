@@ -12,21 +12,18 @@ utilizadores = st.secrets["utilizadores"]
 def verificar_login():
     user = st.text_input("Utilizador")
     password = st.text_input("Password", type="password")
-    login_button = st.button("Entrar")
-
-    if login_button:
+    if st.button("Entrar"):
         if user in utilizadores and utilizadores[user] == password:
             st.session_state['login'] = True
-            st.rerun()  # força o reload com o login feito
+            st.rerun()
         else:
             st.error("Credenciais inválidas!")
-
 
 def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
     if uploaded_file is not None:
         try:
             df = pd.read_excel(uploaded_file)
-            df.columns = df.columns.str.strip()  # Limpa espaços em branco nos nomes das colunas
+            df.columns = df.columns.str.strip()
             st.success("Ficheiro carregado com sucesso!")
 
             if colunas_obrigatorias:
@@ -45,44 +42,30 @@ def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
 
 
 # ----- Funções de Cálculo -----
-
 def calcular_valor_categoria(categoria, kms, agravamento):
-    """
-    Calcula o valor a faturar para Furgão ou Rodado Duplo,
-    de acordo com as regras definidas:
-      - Furgão: 30€ (fixo) + 0.40€/km acima dos 20km, +25% se agravamento
-      - Rodado Duplo: 42€ (fixo) + 0.58€/km acima dos 20km, +25% se agravamento
-    """
     if pd.isna(kms):
         return 0.0
 
     valor = 0.0
     if categoria == 'Furgão':
         if kms <= 20:
-            valor = 30
+            valor = 30  # Taxa de saída fixa
         else:
-            valor = 30 + (0.40 * (kms - 20))
+            valor = 30 + (0.40 * (kms - 20))  # Taxa + kms excedentes
     elif categoria == 'Rodado Duplo':
         if kms <= 20:
-            valor = 42
+            valor = 42  # Taxa de saída fixa
         else:
-            valor = 42 + (0.58 * (kms - 20))
+            valor = 42 + (0.58 * (kms - 20))  # Taxa + kms excedentes
     else:
         valor = 0
 
     if agravamento == 'Sim':
-        valor *= 1.25
+        valor *= 1.25  # Aplicar agravamento de 25%
 
     return valor
 
-
 def calcular_upgrade(row):
-    """
-    Se 'Categoria de Veículo' for 'Ligeiro', testa Furgão.
-    Se for 'Furgão', testa Rodado Duplo.
-    Caso contrário, fica sem upgrade.
-    Retorna (valor_potencial, diferenca, sugestao).
-    """
     cat_atual = row.get('Categoria de Veículo')
     kms = row.get('KMS a Faturar no Serviço')
     agravamento = row.get('Agravamento', 'Não')
@@ -91,28 +74,21 @@ def calcular_upgrade(row):
     if pd.isna(valor_base):
         valor_base = 0.0
 
-    # Ligeiro -> Furgão
     if cat_atual == 'Ligeiro':
         valor_pot = calcular_valor_categoria('Furgão', kms, agravamento)
         dif = valor_pot - valor_base
         if dif > 0:
-            return (valor_pot,
-                    dif,
-                    f"Analisar upgrade p/ Furgão (+{dif:.2f}€)")
+            return (valor_pot, dif, f"Analisar upgrade p/ Furgão (+{dif:.2f}€)")
         else:
             return (valor_pot, dif, "")
-    # Furgão -> Rodado Duplo
     elif cat_atual == 'Furgão':
         valor_pot = calcular_valor_categoria('Rodado Duplo', kms, agravamento)
         dif = valor_pot - valor_base
         if dif > 0:
-            return (valor_pot,
-                    dif,
-                    f"Analisar upgrade p/ Rodado Duplo (+{dif:.2f}€)")
+            return (valor_pot, dif, f"Analisar upgrade p/ Rodado Duplo (+{dif:.2f}€)")
         else:
             return (valor_pot, dif, "")
     else:
-        # Se já for Rodado Duplo ou outra coisa, não sugerimos upgrade
         return (0.0, 0.0, "")
 
 # ----- Exportações -----
