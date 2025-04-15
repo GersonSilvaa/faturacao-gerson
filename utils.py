@@ -99,5 +99,6 @@ def obter_info_extra(row):
         "Avaria": row.get("Descrição da Avaria no Local", ""),
         "Desempanagem": row.get("Serviço de Desempanagem no Local", ""),
         "Contacto": row.get("Contacto Técnico", ""),
-        "Observacoes": row.get("Observações", "")
+        "Observacoes": row.get("Observações", ""),
+        "TipoAvaria": row.get("Tipo de Avaria", "")
     }
