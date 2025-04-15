@@ -1,5 +1,7 @@
 # fidelidade.py
 import streamlit as st
+import pandas as pd
+from utils import processar_ficheiro
 from export_helpers import exportar_fidelidade_excel
 
 def run_fidelidade():
