@@ -102,3 +102,16 @@ def obter_info_extra(row):
         "Observacoes": row.get("Observações", ""),
         "TipoAvaria": row.get("Tipo de Avaria", "")
     }
+
+PALAVRAS_SUSPEITAS = [
+    "pick-up", "remoção", "remocao", "sub", "garagem",
+    "difícil", "acesso", "piso", "-1", "-2"
+]
+
+def contem_texto_suspeito(row, colunas):
+    for col in colunas:
+        valor = str(row.get(col, "")).lower()
+        for palavra in PALAVRAS_SUSPEITAS:
+            if palavra in valor:
+                return True
+    return False
