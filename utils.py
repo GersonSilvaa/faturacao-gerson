@@ -90,7 +90,8 @@ FIDELIDADE_COLUNAS_EXTRA = [
     "Descrição da Avaria no Local",
     "Serviço de Desempanagem no Local",
     "Contacto Técnico",
-    "Observações"
+    "Observações",
+    "Tipo de Avaria"
 ]
 
 def obter_info_extra(row):
