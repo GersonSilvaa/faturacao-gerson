@@ -81,3 +81,19 @@ def calcular_upgrade(row):
             return (valor_pot, dif, "")
     else:
         return (0.0, 0.0, "")
+
+# Estas colunas adicionais da Fidelidade poderão ser analisadas por novas funções se necessário
+FIDELIDADE_COLUNAS_EXTRA = [
+    "Descrição da Avaria no Local",
+    "Serviço de Desempanagem no Local",
+    "Contacto Técnico",
+    "Observações"
+]
+
+def obter_info_extra(row):
+    return {
+        "Avaria": row.get("Descrição da Avaria no Local", ""),
+        "Desempanagem": row.get("Serviço de Desempanagem no Local", ""),
+        "Contacto": row.get("Contacto Técnico", ""),
+        "Observacoes": row.get("Observações", "")
+    }
