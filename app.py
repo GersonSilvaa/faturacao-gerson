@@ -22,18 +22,23 @@ def verificar_login():
 
 def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
     if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-        df.columns = df.columns.str.strip()  # Limpa espaços em branco nos nomes das colunas
-        st.success("Ficheiro carregado com sucesso!")
+        try:
+            df = pd.read_excel(uploaded_file)
+            df.columns = df.columns.str.strip()  # Limpa espaços em branco nos nomes das colunas
+            st.success("Ficheiro carregado com sucesso!")
 
-        # Verificação de colunas obrigatórias
-        if colunas_obrigatorias:
-            colunas_em_falta = [col for col in colunas_obrigatorias if col not in df.columns]
-            if colunas_em_falta:
-                st.error(f"Atenção! O ficheiro está a faltar as colunas: {', '.join(colunas_em_falta)}")
-                return None
+            # Verificação de colunas obrigatórias (se for fornecida a lista)
+            if colunas_obrigatorias:
+                colunas_em_falta = [col for col in colunas_obrigatorias if col not in df.columns]
+                if colunas_em_falta:
+                    st.error(f"Atenção! O ficheiro está a faltar as colunas: {', '.join(colunas_em_falta)}")
+                    return None
 
-        return df
+            return df
+        except Exception as e:
+            # Se der erro ao ler o Excel (ficheiro corrompido ou não Excel)
+            st.error("Erro ao ler o ficheiro. Verifica se é um ficheiro Excel válido (.xlsx).")
+            return None
     else:
         st.warning("Por favor, carrega o ficheiro Excel.")
         return None
@@ -96,16 +101,13 @@ def exportar_divergencias(df, referencia):
 
     # Cruzar com a referência para buscar Marca, Modelo e Categoria
     if referencia is not None:
-        referencia = referencia.rename(columns={
-            'Marca': 'Marca',
-            'Modelo': 'Modelo',
-            'Categoria de Veículo': 'Categoria de Veículo'
-        })
+        # Avisa se nas colunas do df principal não existir 'Matricula' (sem acento) ou no ref for 'Matrícula' (com acento)
+        # e ajusta caso seja necessário
         divergencias = divergencias.merge(
-            referencia[['Matricula', 'Marca', 'Modelo', 'Categoria de Veículo']],
+            referencia[['Matrícula', 'Marca', 'Modelo', 'Categoria de Veículo']],
             how='left',
-            left_on='Matricula',
-            right_on='Matricula'
+            left_on='Matricula',   # na divergencia base chama-se 'Matricula' (sem acento)
+            right_on='Matrícula'   # na referência chama-se 'Matrícula' (com acento)
         )
 
     output = io.BytesIO()
@@ -127,12 +129,12 @@ def exportar_divergencias(df, referencia):
             worksheet.write(row_num, col_agravamento_idx, agravamento, format_agravado)
 
     # Destacar células em falta nas novas colunas
-    for row_num, row in divergencias.iterrows():
-        if pd.isna(row.get('Marca')):
+    for row_num, row_data in divergencias.iterrows():
+        if 'Marca' in headers and pd.isna(row_data.get('Marca')):
             worksheet.write(row_num + 1, headers.index('Marca'), '', format_faltante)
-        if pd.isna(row.get('Modelo')):
+        if 'Modelo' in headers and pd.isna(row_data.get('Modelo')):
             worksheet.write(row_num + 1, headers.index('Modelo'), '', format_faltante)
-        if pd.isna(row.get('Categoria de Veículo')):
+        if 'Categoria de Veículo' in headers and pd.isna(row_data.get('Categoria de Veículo')):
             worksheet.write(row_num + 1, headers.index('Categoria de Veículo'), '', format_faltante)
 
     writer.close()
@@ -143,7 +145,7 @@ def exportar_divergencias(df, referencia):
 
 
 # ----- Início da aplicação -----
-st.title("Gestão de Faturação - 🚛")
+st.title("Gestão de Faturação - IPA 🚛")
 
 if 'login' not in st.session_state:
     st.session_state['login'] = False
@@ -155,14 +157,14 @@ else:
     st.subheader("Upload do Ficheiro de Comparação")
     uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"])
 
-    st.subheader("Upload do Ficheiro de Referência (Matriculas + Marca/Modelo/Categoria)")
+    st.subheader("Upload do Ficheiro de Referência (Matrículas + Marca/Modelo/Categoria)")
     referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"])
 
     referencia_df = None
     if referencia_file:
         referencia_df = processar_ficheiro(
             referencia_file,
-            colunas_obrigatorias=["Matricula", "Marca", "Modelo", "Categoria de Veículo"]
+            colunas_obrigatorias=["Matrícula", "Marca", "Modelo", "Categoria de Veículo"]
         )
         if referencia_df is not None:
             st.write("Pré-visualização do ficheiro de referência:")
@@ -199,6 +201,7 @@ else:
             else:
                 st.warning("Não existem processos prontos a faturar neste ficheiro.")
 
+            # Só exportamos divergências se já tivermos um df de referência
             if referencia_df is not None:
                 if st.button("Exportar Divergências para Análise"):
                     output, filename = exportar_divergencias(df, referencia_df)
