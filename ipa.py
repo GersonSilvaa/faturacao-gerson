@@ -4,7 +4,8 @@ import math
 import io
 from datetime import datetime
 from utils import processar_ficheiro
-from export_helpers import exportar_listas, exportar_divergencias
+from export_helpers import exportar_listas, exportar_divergencias, exportar_cruzamento_weboffice
+
 
 def run_ipa():
     st.title("Gestão de Faturação - IPA 🚛")
@@ -14,6 +15,9 @@ def run_ipa():
 
     st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
     referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia")
+    
+    st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
+    weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
 
     referencia_df = None
     if referencia_file:
@@ -31,6 +35,27 @@ def run_ipa():
         if referencia_df is not None:
             st.write("Pré-visualização do ficheiro de referência:")
             st.dataframe(referencia_df.head())
+            st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
+            weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
+            
+            if weboffice_file is not None:
+                weboffice_df = processar_ficheiro(
+                weboffice_file,
+                colunas_obrigatorias=["Dossier", "Total"]
+            )
+
+            if weboffice_df is not None:
+                st.write("Pré-visualização WebOffice:")
+                st.dataframe(weboffice_df, height=300)
+                if st.button("Exportar Cruzamento WebOffice vs Gestow"):
+                    output, filename = exportar_cruzamento_weboffice(weboffice_df, referencia_df)
+                    st.download_button(
+                        "Descarregar Excel Cruzado",
+                        data=output,
+                        file_name=filename,
+                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            
 
     if uploaded_file:
         df = processar_ficheiro(uploaded_file)
@@ -88,4 +113,5 @@ def run_ipa():
 
     else:
         st.info("Aguardo o carregamento do ficheiro Excel de comparação.")
+
 
