@@ -3,6 +3,7 @@ from PIL import Image
 from utils import verificar_login
 from ipa import run_ipa
 from fidelidade import run_fidelidade
+from acp import run_acp
 
 # ----- Layout da página -----
 st.set_page_config(
@@ -27,7 +28,7 @@ else:
 
     st.sidebar.title("Menu")
     st.sidebar.markdown(f"👤 Utilizador: **{st.session_state.get('utilizador', 'Desconhecido')}**")
-    companhia = st.sidebar.selectbox("Companhia:", ["IPA", "FIDELIDADE"], key="companhia")
+    companhia = st.sidebar.selectbox("Companhia:", ["IPA", "FIDELIDADE", "ACP"], key="companhia")
 
     # ----- Título da app -----
     st.title("Gestão de Faturação")
@@ -37,3 +38,5 @@ else:
         run_ipa()
     elif companhia == "FIDELIDADE":
         run_fidelidade()
+    elif companhia == "ACP":
+        run_acp()
