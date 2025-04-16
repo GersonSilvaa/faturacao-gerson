@@ -16,9 +16,6 @@ def run_ipa():
     st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
     referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia_ipa")
     
-    st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
-    weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
-
     weboffice_df = None
     referencia_df = None
     
