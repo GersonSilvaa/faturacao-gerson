@@ -21,7 +21,7 @@ else:
     # ----- Sidebar com logo e menu -----
     try:
         logo = Image.open("assets/logo.png")  # Altera o caminho se estiver noutra pasta
-        st.sidebar.image(logo, use_column_width=True)
+        st.sidebar.image(logo, use_container_width=True)
     except:
         st.sidebar.write("🧾 Logo não encontrado.")
 
