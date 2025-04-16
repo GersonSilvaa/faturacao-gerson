@@ -17,8 +17,9 @@ if not st.session_state['login']:
     verificar_login()
 else:
     st.title("Gestão de Faturação 💼")
-    st.subheader("Escolhe a companhia com que vais trabalhar")
-    companhia = st.selectbox("Companhia:", ["IPA", "FIDELIDADE"])
+    st.sidebar.title("Menu")
+    st.sidebar.markdown(f"👤 Utilizador: **{st.session_state.get('utilizador', 'Desconhecido')}**")
+    companhia = st.sidebar.selectbox("Companhia:", ["IPA", "FIDELIDADE"], key="companhia")
 
     if companhia == "IPA":
         run_ipa()
