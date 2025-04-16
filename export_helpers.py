@@ -148,3 +148,48 @@ def exportar_fidelidade_excel(df):
     writer.close()
     output.seek(0)
     return output, "Analise_Fidelidade_Formatado.xlsx"
+
+# -- EXPORTAÇÃO DE EXCEL DA IPA CRUZAMENTO COM GESTOW
+def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
+    # Normalizar nomes das colunas (tira espaços à direita/esquerda)
+    weboffice_df.columns = weboffice_df.columns.str.strip()
+    referencia_df.columns = referencia_df.columns.str.strip()
+
+    # Criar cópia do valor gestow com IVA
+    referencia_df["Valor Gestow c/IVA"] = referencia_df["Valor a Faturar S/IVA"] * 1.23
+
+    # Cruzar ficheiros pelo processo da companhia
+    merged = weboffice_df.merge(
+        referencia_df[["Processo da Companhia", "Valor Gestow c/IVA"]],
+        how="left",
+        left_on="Dossier",
+        right_on="Processo da Companhia"
+    )
+
+    # Calcular diferença
+    merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
+
+    # Comentário
+    def classificar_diferenca(diff):
+        if pd.isna(diff):
+            return "Sem correspondência"
+        elif abs(diff) < 0.01:
+            return "Igual"
+        elif diff > 0:
+            return "A ganhar"
+        else:
+            return "A perder"
+
+    merged["Comentário"] = merged["Diferença €"].apply(classificar_diferenca)
+
+    # Reordenar colunas
+    final = merged[["Dossier", "Total", "Diferença €", "Valor Gestow c/IVA", "Comentário"]]
+
+    # Exportar Excel
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    final.to_excel(writer, index=False, sheet_name="Cruzamento WebOffice")
+    writer.close()
+    output.seek(0)
+
+    return output, "Cruzamento_WebOffice_vs_Gestow.xlsx"
