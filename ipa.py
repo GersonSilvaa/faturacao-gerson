@@ -19,7 +19,9 @@ def run_ipa():
     st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
     weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
 
+    weboffice_df = None
     referencia_df = None
+    
     if referencia_file:
         referencia_df = processar_ficheiro(
             referencia_file,
