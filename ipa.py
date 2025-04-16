@@ -14,7 +14,7 @@ def run_ipa():
     uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"], key="comparacao")
 
     st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
-    referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia")
+    referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia_ipa")
     
     st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
     weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
@@ -36,7 +36,7 @@ def run_ipa():
             st.write("Pré-visualização do ficheiro de referência:")
             st.dataframe(referencia_df.head())
             st.subheader("Upload do Ficheiro WebOffice (Portal IPA)")
-            weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice")
+            weboffice_file = st.file_uploader("Ficheiro WebOffice (com Dossier e Total)", type=["xlsx"], key="weboffice_ipa")
             
             if weboffice_file is not None:
                 weboffice_df = processar_ficheiro(
