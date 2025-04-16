@@ -1,7 +1,12 @@
 import streamlit as st
 from utils import verificar_login
 from ipa import run_ipa
-from fidelidade import run_fidelidade  # mesmo que esteja vazio por enquanto
+from fidelidade import run_fidelidade
+
+st.set_page_config(
+    page_title="Gestão de Faturação",
+    layout="wide"  # <-- ESTA LINHA É A CHAVE
+)
 
 # ----- Login e menu inicial -----
 if 'login' not in st.session_state:
