@@ -39,7 +39,7 @@ def run_fidelidade():
 
             # Pré-visualização
             st.write("Pré-visualização dos dados importados:")
-            st.dataframe(df_filtrado)
+            st.dataframe(df_filtrado, height=600)
 
             # Exportação geral
             if st.button("Exportar Excel com Destaques (Todos os Serviços)"):
