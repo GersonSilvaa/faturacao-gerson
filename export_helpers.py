@@ -151,19 +151,22 @@ def exportar_fidelidade_excel(df):
 
 # -- EXPORTAÇÃO DE EXCEL DA IPA CRUZAMENTO COM GESTOW
 def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
-    # Normalizar nomes das colunas (tira espaços à direita/esquerda)
+    # Limpar nomes de colunas
     weboffice_df.columns = weboffice_df.columns.str.strip()
     referencia_df.columns = referencia_df.columns.str.strip()
 
-    # Criar cópia do valor gestow com IVA
+    # Normalizar Matrículas (remover traços, espaços e passar a maiúsculas)
+    weboffice_df["matricula_normalizada"] = weboffice_df["Matricula"].str.replace("-", "").str.upper().str.strip()
+    referencia_df["matricula_normalizada"] = referencia_df["Matrícula"].str.replace("-", "").str.upper().str.strip()
+
+    # Calcular o valor Gestow com IVA
     referencia_df["Valor Gestow c/IVA"] = referencia_df["Valor a Faturar S/IVA"] * 1.23
 
-    # Cruzar ficheiros pelo processo da companhia
+    # Juntar com base na matrícula normalizada
     merged = weboffice_df.merge(
-        referencia_df[["Processo da Companhia", "Valor Gestow c/IVA"]],
-        how="left",
-        left_on="Dossier",
-        right_on="Processo da Companhia"
+        referencia_df[["matricula_normalizada", "Valor Gestow c/IVA"]],
+        on="matricula_normalizada",
+        how="left"
     )
 
     # Calcular diferença
@@ -182,8 +185,15 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
 
     merged["Comentário"] = merged["Diferença €"].apply(classificar_diferenca)
 
-    # Reordenar colunas
-    final = merged[["Dossier", "Total", "Diferença €", "Valor Gestow c/IVA", "Comentário"]]
+    # Reordenar colunas conforme pedido
+    final = merged[[
+        "Matricula",                 # original do WebOffice
+        "Dossier",                   # nr processo webOffice
+        "Total",                     # valor do WebOffice
+        "Diferença €",
+        "Valor Gestow c/IVA",
+        "Comentário"
+    ]].sort_values(by="Dossier")
 
     # Exportar Excel
     output = io.BytesIO()
