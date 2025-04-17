@@ -187,9 +187,9 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
 
     # Reordenar colunas conforme pedido
     final = merged[[
-        "Matricula",                 # original do WebOffice
-        "Dossier",                   # nr processo webOffice
-        "Total",                     # valor do WebOffice
+        "Apol/Mat",
+        "Dossier",
+        "Total",
         "Diferença €",
         "Valor Gestow c/IVA",
         "Comentário"
