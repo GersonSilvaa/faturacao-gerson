@@ -4,7 +4,7 @@ from utils import processar_ficheiro, FIDELIDADE_COLUNAS_EXTRA, contem_texto_sus
 from export_helpers import exportar_fidelidade_excel
 
 def run_fidelidade():
-    st.title("Gestão de Faturação - FIDELIDADE 🛡️")
+    st.subheader("FIDELIDADE 🛡️")
 
     st.subheader("Upload do Ficheiro Exportado do Gestow")
     uploaded_file = st.file_uploader("Ficheiro de serviços da Fidelidade (Gestow)", type=["xlsx"], key="fidelidade_gestow")
