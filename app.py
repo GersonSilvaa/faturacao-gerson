@@ -11,6 +11,8 @@ st.set_page_config(
     layout="wide"
 )
 
+st.title("Gestão de Faturação")  # <- Fica visível antes e depois do login
+
 # ----- Login e Navegação -----
 if 'login' not in st.session_state:
     st.session_state['login'] = False
