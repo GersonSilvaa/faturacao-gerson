@@ -8,13 +8,13 @@ from export_helpers import exportar_listas, exportar_divergencias, exportar_cruz
 
 
 def run_ipa():
-st.title("Gestão de Faturação - IPA 🚛")
+    st.title("Gestão de Faturação - IPA 🚛")
 
-st.subheader("Upload do Ficheiro de Comparação")
-uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"], key="comparacao")
+    st.subheader("Upload do Ficheiro de Comparação")
+    uploaded_file = st.file_uploader("Escolhe o ficheiro Excel de comparação", type=["xlsx"], key="comparacao")
 
-st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
-referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia_ipa")
+    st.subheader("Upload do Ficheiro de Referência (com colunas Matrícula + Marca/Modelo/Categoria + KMS + Valor a Faturar S/IVA)")
+    referencia_file = st.file_uploader("Escolhe o ficheiro de referência", type=["xlsx"], key="referencia_ipa")
 
 weboffice_df = None
 referencia_df = None
