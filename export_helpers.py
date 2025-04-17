@@ -156,7 +156,7 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     referencia_df.columns = referencia_df.columns.str.strip()
 
     # Normalizar Matrículas (remover traços, espaços e passar a maiúsculas)
-    weboffice_df["matricula_normalizada"] = weboffice_df["Matricula"].str.replace("-", "").str.upper().str.strip()
+    weboffice_df["matricula_normalizada"] = weboffice_df["Apol/Mat"].astype(str).str.replace("-", "").str.upper().str.strip()
     referencia_df["matricula_normalizada"] = referencia_df["Matrícula"].str.replace("-", "").str.upper().str.strip()
 
     # Calcular o valor Gestow com IVA
