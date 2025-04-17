@@ -4,7 +4,7 @@ from utils import processar_ficheiro
 # import outros helpers no futuro conforme precisares
 
 def run_acp():
-    st.title("Gestão de Faturação - ACP 🛻")
+    st.subheader("ACP 🚗")
 
     st.subheader("Upload do Ficheiro Exportado do Gestow")
     uploaded_file = st.file_uploader("Ficheiro de serviços da ACP (Gestow)", type=["xlsx"], key="acp_gestow")
