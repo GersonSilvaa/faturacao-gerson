@@ -18,13 +18,12 @@ if 'login' not in st.session_state:
 if not st.session_state['login']:
     st.subheader("Login de Acesso")
     verificar_login()
-else:
-# ----- Sidebar com logo e menu -----
-try:
-    logo = Image.open("assets/logo.png")  # Altera o caminho se estiver noutra pasta
-    st.sidebar.image(logo, use_container_width=True)
-except:
-    st.sidebar.write("🧾 Logo não encontrado.")
+else: # ----- Sidebar com logo e menu -----
+    try:
+        logo = Image.open("assets/logo.png")  # Altera o caminho se estiver noutra pasta
+        st.sidebar.image(logo, use_container_width=True)
+    except:
+        st.sidebar.write("🧾 Logo não encontrado.")
 
 st.sidebar.title("Menu")
 st.sidebar.markdown(f"👤 Utilizador: **{st.session_state.get('utilizador', 'Desconhecido')}**")
