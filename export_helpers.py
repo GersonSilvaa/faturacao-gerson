@@ -153,6 +153,14 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         how="left"
     )
 
+    merged["Total"] = (
+    merged["Total"]
+    .astype(str)
+    .str.replace("€", "", regex=False)
+    .str.replace(",", ".", regex=False)
+    .str.strip()
+    )
+
     merged["Total"] = pd.to_numeric(merged["Total"], errors="coerce")
     merged["Valor Gestow c/IVA"] = pd.to_numeric(merged["Valor Gestow c/IVA"], errors="coerce")
     merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
