@@ -32,8 +32,8 @@ def run_acp():
         if st.button("Exportar Ficheiro Corrigido ACP"):
             output, filename = exportar_acp_corrigido(acp_df, gestow_df)
             st.download_button(
-                label="Descarregar Excel Corrigido",
+                label="Descarregar CSV Corrigido",
                 data=output,
                 file_name=filename,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mime="text/csv"
             )
