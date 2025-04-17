@@ -137,22 +137,31 @@ def exportar_fidelidade_excel(df):
     output.seek(0)
     return output, "Analise_Fidelidade_Formatado.xlsx"
 
-
+# IPA
 def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     weboffice_df.columns = weboffice_df.columns.str.strip()
     referencia_df.columns = referencia_df.columns.str.strip()
 
+    # Normalizar Matrículas
     weboffice_df["matricula_normalizada"] = weboffice_df["Apol/Mat"].astype(str).str.replace("-", "").str.upper().str.strip()
-    referencia_df["matricula_normalizada"] = referencia_df["Matrícula"].str.replace("-", "").str.upper().str.strip()
+    referencia_df["matricula_normalizada"] = referencia_df["Matrícula"].astype(str).str.replace("-", "").str.upper().str.strip()
 
-    referencia_df["Valor Gestow c/IVA"] = referencia_df["Valor a Faturar S/IVA"] * 1.23
+    # Agrupar no Gestow por matrícula e somar valores
+    gestow_agrupado = (
+        referencia_df
+        .groupby("matricula_normalizada", as_index=False)
+        .agg({"Valor a Faturar S/IVA": "sum"})
+    )
+    gestow_agrupado["Total_Gestow"] = gestow_agrupado["Valor a Faturar S/IVA"] * 1.23
 
+    # Merge com WebOffice
     merged = weboffice_df.merge(
-        referencia_df[["matricula_normalizada", "Valor Gestow c/IVA"]],
+        gestow_agrupado[["matricula_normalizada", "Total_Gestow"]],
         on="matricula_normalizada",
         how="left"
     )
 
+    # Limpeza de valores e diferença
     merged["Total"] = (
         merged["Total"]
         .astype(str)
@@ -160,10 +169,11 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         .str.replace(",", ".", regex=False)
         .str.strip()
     )
-    merged["Total"] = pd.to_numeric(merged["Total"], errors="coerce")
-    merged["Valor Gestow c/IVA"] = pd.to_numeric(merged["Valor Gestow c/IVA"], errors="coerce")
-    merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
+    merged["Total_IPA"] = pd.to_numeric(merged["Total"], errors="coerce")
+    merged["Total_Gestow"] = pd.to_numeric(merged["Total_Gestow"], errors="coerce")
+    merged["Diferença €"] = merged["Total_IPA"] - merged["Total_Gestow"]
 
+    # Comentário (Obs.)
     def classificar_diferenca(diff):
         if pd.isna(diff):
             return "Sem correspondência"
@@ -172,25 +182,24 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         elif diff > 0:
             return "A ganhar"
         else:
-            return ""  # <- aqui omitimos o "a perder"
+            return ""
 
-    merged["Comentário"] = merged["Diferença €"].apply(classificar_diferenca)
+    merged["Obs."] = merged["Diferença €"].apply(classificar_diferenca)
 
+    # Construir dataframe final
     final = merged[[
         "Apol/Mat",
         "Dossier",
-        "Total",
+        "Total_IPA",
         "Diferença €",
-        "Valor Gestow c/IVA",
-        "Comentário"
+        "Total_Gestow",
+        "Obs."
     ]].rename(columns={
         "Apol/Mat": "Matricula",
-        "Dossier": "Dossier_IPA",
-        "Total": "Total_IPA",
-        "Valor Gestow c/IVA": "Total_Gestow",
-        "Comentário": "Obs."
+        "Dossier": "Dossier_IPA"
     }).sort_values(by="Dossier_IPA")
 
+    # Exportar para Excel com cores
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     final.to_excel(writer, index=False, sheet_name="Cruzamento WebOffice")
@@ -198,7 +207,7 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     workbook = writer.book
     worksheet = writer.sheets["Cruzamento WebOffice"]
 
-    # Estilos de cabeçalho
+    # Estilos para cabeçalhos
     header_format_ipa = workbook.add_format({
         'bold': True,
         'bg_color': '#DDEBF7',
@@ -211,14 +220,11 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         'border': 1
     })
 
-    # Aplica estilos
     for col_num, column in enumerate(final.columns):
         if column in ["Matricula", "Dossier_IPA", "Total_IPA"]:
             worksheet.write(0, col_num, column, header_format_ipa)
         elif column in ["Total_Gestow", "Obs.", "Diferença €"]:
             worksheet.write(0, col_num, column, header_format_gestow)
-        else:
-            worksheet.write(0, col_num, column)  # fallback, mas não deve acontecer
 
     writer.close()
     output.seek(0)
