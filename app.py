@@ -13,11 +13,11 @@ layout="wide"
 
 # ----- Login e Navegação -----
 if 'login' not in st.session_state:
-st.session_state['login'] = False
+    st.session_state['login'] = False
 
 if not st.session_state['login']:
-st.subheader("Login de Acesso")
-verificar_login()
+    st.subheader("Login de Acesso")
+    verificar_login()
 else:
 # ----- Sidebar com logo e menu -----
 try:
