@@ -154,13 +154,12 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     )
 
     merged["Total"] = (
-    merged["Total"]
-    .astype(str)
-    .str.replace("€", "", regex=False)
-    .str.replace(",", ".", regex=False)
-    .str.strip()
+        merged["Total"]
+        .astype(str)
+        .str.replace("€", "", regex=False)
+        .str.replace(",", ".", regex=False)
+        .str.strip()
     )
-
     merged["Total"] = pd.to_numeric(merged["Total"], errors="coerce")
     merged["Valor Gestow c/IVA"] = pd.to_numeric(merged["Valor Gestow c/IVA"], errors="coerce")
     merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
@@ -173,7 +172,7 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         elif diff > 0:
             return "A ganhar"
         else:
-            return "A perder"
+            return ""  # <- aqui omitimos o "a perder"
 
     merged["Comentário"] = merged["Diferença €"].apply(classificar_diferenca)
 
@@ -184,12 +183,43 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
         "Diferença €",
         "Valor Gestow c/IVA",
         "Comentário"
-    ]].sort_values(by="Dossier")
+    ]].rename(columns={
+        "Apol/Mat": "Matricula",
+        "Dossier": "Dossier_IPA",
+        "Total": "Total_IPA",
+        "Valor Gestow c/IVA": "Total_Gestow",
+        "Comentário": "Obs."
+    }).sort_values(by="Dossier_IPA")
 
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     final.to_excel(writer, index=False, sheet_name="Cruzamento WebOffice")
+
+    workbook = writer.book
+    worksheet = writer.sheets["Cruzamento WebOffice"]
+
+    # Estilos de cabeçalho
+    header_format_ipa = workbook.add_format({
+        'bold': True,
+        'bg_color': '#DDEBF7',
+        'border': 1
+    })
+
+    header_format_gestow = workbook.add_format({
+        'bold': True,
+        'bg_color': '#E2F0D9',
+        'border': 1
+    })
+
+    # Aplica estilos
+    for col_num, column in enumerate(final.columns):
+        if column in ["Matricula", "Dossier_IPA", "Total_IPA"]:
+            worksheet.write(0, col_num, column, header_format_ipa)
+        elif column in ["Total_Gestow", "Obs.", "Diferença €"]:
+            worksheet.write(0, col_num, column, header_format_gestow)
+        else:
+            worksheet.write(0, col_num, column)  # fallback, mas não deve acontecer
+
     writer.close()
     output.seek(0)
-
     return output, "Cruzamento_WebOffice_vs_Gestow.xlsx"
