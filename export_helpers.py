@@ -170,7 +170,9 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     )
 
     # Calcular diferença
-    merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
+        merged["Total"] = pd.to_numeric(merged["Total"], errors="coerce")
+        merged["Valor Gestow c/IVA"] = pd.to_numeric(merged["Valor Gestow c/IVA"], errors="coerce")
+        merged["Diferença €"] = merged["Total"] - merged["Valor Gestow c/IVA"]
 
     # Comentário
     def classificar_diferenca(diff):
