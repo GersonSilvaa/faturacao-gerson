@@ -6,7 +6,6 @@ from datetime import datetime
 from utils import processar_ficheiro
 from export_helpers import exportar_listas, exportar_divergencias, exportar_cruzamento_weboffice
 
-
 def run_ipa():
     st.title("Gestão de Faturação - IPA 🚛")
 
