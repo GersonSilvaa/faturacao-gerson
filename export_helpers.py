@@ -223,3 +223,30 @@ def exportar_cruzamento_weboffice(weboffice_df, referencia_df):
     writer.close()
     output.seek(0)
     return output, "Cruzamento_WebOffice_vs_Gestow.xlsx"
+
+# ACP
+def exportar_acp_corrigido(acp_df, gestow_df):
+    acp_df = acp_df.copy()
+    gestow_df = gestow_df.copy()
+
+    # Normalizar Matrículas
+    acp_df["matricula_normalizada"] = acp_df["Matrícula"].astype(str).str.replace("-", "").str.upper().str.strip()
+    gestow_df["matricula_normalizada"] = gestow_df["Matrícula"].astype(str).str.replace("-", "").str.upper().str.strip()
+
+    # Criar dicionário: matrícula → processo
+    mapa_processos = gestow_df.set_index("matricula_normalizada")["Processo da Companhia"].to_dict()
+
+    # Substituir a coluna "Interv." por valores correspondentes
+    acp_df["Interv."] = acp_df["matricula_normalizada"].map(mapa_processos).fillna("NAO ENCONTRADO")
+
+    # Remover coluna auxiliar
+    acp_df.drop(columns=["matricula_normalizada"], inplace=True)
+
+    # Exportar
+    output = io.BytesIO()
+    writer = pd.ExcelWriter(output, engine="xlsxwriter")
+    acp_df.to_excel(writer, index=False, sheet_name="ACP Corrigido")
+    writer.close()
+    output.seek(0)
+
+    return output, "ACP_Corrigido.xlsx"
