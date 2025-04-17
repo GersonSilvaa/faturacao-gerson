@@ -243,10 +243,8 @@ def exportar_acp_corrigido(acp_df, gestow_df):
     acp_df.drop(columns=["matricula_normalizada"], inplace=True)
 
     # Exportar
-    output = io.BytesIO()
-    writer = pd.ExcelWriter(output, engine="xlsxwriter")
-    acp_df.to_excel(writer, index=False, sheet_name="ACP Corrigido")
-    writer.close()
+    output = io.StringIO()
+    acp_df.to_csv(output, index=False, sep=";")
     output.seek(0)
 
-    return output, "ACP_Corrigido.xlsx"
+    return output, "ACP_Corrigido.csv"
