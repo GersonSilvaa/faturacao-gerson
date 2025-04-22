@@ -248,6 +248,10 @@ def exportar_acp_corrigido(acp_df, gestow_df):
     # Remover coluna auxiliar
     acp_df.drop(columns=["matricula_normalizada"], inplace=True)
 
+    # Corrigir número do processo para remover ".0"
+    if "Interv." in acp_df.columns:
+        acp_df["Interv."] = acp_df["Interv."].apply(lambda x: str(int(x)) if pd.notna(x) and str(x).replace('.', '', 1).isdigit() else x)
+
     # Exportar
     output = io.StringIO()
     acp_df.to_csv(output, index=False, sep=";")
