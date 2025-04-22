@@ -251,6 +251,6 @@ def exportar_acp_corrigido(acp_df, gestow_df):
     # Exportar
     output = io.StringIO()
     acp_df.to_csv(output, index=False, sep=";")
-    output.seek(0)
+    conteudo_csv = output.getvalue()
 
-    return output, "ACP_Corrigido.csv"
+    return conteudo_csv, "ACP_Corrigido.csv"
