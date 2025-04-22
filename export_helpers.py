@@ -252,6 +252,10 @@ def exportar_acp_corrigido(acp_df, gestow_df):
     if "Interv." in acp_df.columns:
         acp_df["Interv."] = acp_df["Interv."].apply(lambda x: str(int(x)) if pd.notna(x) and str(x).replace('.', '', 1).isdigit() else x)
 
+    # Ordenar por Num. Documento
+    if "Num. Documento" in acp_df.columns:
+        acp_df = acp_df.sort_values(by="Num. Documento", ascending=True)
+
     # Exportar
     output = io.BytesIO()
     conteudo_csv = acp_df.to_csv(index=False, sep=";", encoding="utf-8-sig")
