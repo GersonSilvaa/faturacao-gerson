@@ -253,8 +253,9 @@ def exportar_acp_corrigido(acp_df, gestow_df):
         acp_df["Interv."] = acp_df["Interv."].apply(lambda x: str(int(x)) if pd.notna(x) and str(x).replace('.', '', 1).isdigit() else x)
 
     # Exportar
-    output = io.StringIO()
-    acp_df.to_csv(output, index=False, sep=";")
-    conteudo_csv = output.getvalue()
+    output = io.BytesIO()
+    conteudo_csv = acp_df.to_csv(index=False, sep=";", encoding="utf-8-sig")
+    output.write(conteudo_csv.encode("utf-8-sig"))
+    output.seek(0)
 
-    return conteudo_csv, "ACP_Corrigido.csv"
+    return output, "ACP_Corrigido.csv"
