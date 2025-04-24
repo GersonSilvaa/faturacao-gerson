@@ -17,6 +17,10 @@ def processar_ficheiro(uploaded_file, colunas_obrigatorias=None):
         try:
             df = pd.read_excel(uploaded_file)
             df.columns = df.columns.str.strip()
+
+            # Corrigir "Matricula" sem acento para "Matrícula"
+            df.columns = [col.replace("Matricula", "Matrícula") if col == "Matricula" else col for col in df.columns]
+
             st.success("Ficheiro carregado com sucesso!")
 
             if colunas_obrigatorias:
