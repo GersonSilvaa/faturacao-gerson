@@ -29,11 +29,10 @@ def run_acp():
             st.dataframe(gestow_df.head(), height=250)
 
     # Uniformizar coluna de matrícula (caso venha sem acento)
-    acp_df.columns = acp_df.columns.str.strip()
-    if "Matricula" in acp_df.columns:
-        acp_df = acp_df.rename(columns={"Matricula": "Matrícula"})
-        # Remover acento do cabeçalho na exportação
-        acp_df = acp_df.rename(columns={"Matrícula": "Matricula"})
+    if acp_df is not None:
+        acp_df.columns = acp_df.columns.str.strip()
+        if "Matricula" in acp_df.columns:
+            acp_df = acp_df.rename(columns={"Matricula": "Matrícula"})
 
     if acp_df is not None and gestow_df is not None:
         if st.button("Exportar Ficheiro Corrigido ACP"):
