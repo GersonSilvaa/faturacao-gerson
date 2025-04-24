@@ -46,17 +46,10 @@ def exportar_listas(prontos_faturar, num_listas):
 
 
 def exportar_divergencias(df, referencia):
-    # ——————— Normalizar coluna de matrícula ———————
-    # Se vier sem acento, renomeia "Matricula" → "Matrícula"
-    if 'Matricula' in df.columns:
-        df = df.rename(columns={'Matricula': 'Matrícula'})
-
-    
-
-    # Passo 1: trabalhar com todas as linhas, não só divergentes
+    # Copiar todos os dados (com ou sem divergência)
     divergencias = df.copy()
 
-     # Determinar Agravamento
+    # Verificar agravamento
     def verificar_agravamento(data):
         if pd.isna(data):
             return "Não"
@@ -67,56 +60,59 @@ def exportar_divergencias(df, referencia):
     divergencias['Data_Requisicao'] = pd.to_datetime(divergencias['Data_Requisicao'], errors='coerce')
     divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
 
-    # Merge com o ficheiro de referência
     if referencia is not None:
-        colunas_ref = [
-            'Matrícula',
+        # Corrigir nomes de colunas no ficheiro de referência
+        referencia.columns = referencia.columns.str.strip()
+        referencia = referencia.rename(columns=lambda x: x.replace("í", "i") if "Matricula" in x else x)
+
+        # Fazer o mesmo no ficheiro principal
+        divergencias.columns = divergencias.columns.str.strip()
+        divergencias = divergencias.rename(columns=lambda x: x.replace("í", "i") if "Matricula" in x else x)
+
+        col_ref = [
+            'Matricula',
             'Marca',
             'Modelo',
             'Categoria de Veículo',
             'KMS a Faturar no Serviço',
             'Valor a Faturar S/IVA'
         ]
-        
+
         divergencias = divergencias.merge(
-            referencia[colunas_ref],
+            referencia[col_ref],
             how='left',
-            on='Matrícula'
+            left_on='Matricula',
+            right_on='Matricula'
         )
 
+        from utils import calcular_upgrade
         divergencias[['Valor Potencial', 'Diferença Upgrade', 'Sugestão Upgrade']] = divergencias.apply(
             lambda row: pd.Series(calcular_upgrade(row)),
             axis=1
         )
 
+    # Exportar Excel
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    divergencias.to_excel(writer, index=False, sheet_name='Divergencias')
+    divergencias.to_excel(writer, index=False, sheet_name='Analise Total')
 
     workbook = writer.book
-    worksheet = writer.sheets['Divergencias']
+    worksheet = writer.sheets['Analise Total']
 
-    format_agravado = workbook.add_format({'bg_color': '#FFFF00'})
-    format_faltante = workbook.add_format({'bg_color': '#FFFF00'})
-
+    amarelo = workbook.add_format({'bg_color': '#FFFF00'})
     headers = list(divergencias.columns)
 
     if "Agravamento" in headers:
-        col_agravamento_idx = headers.index("Agravamento")
-        for row_num, valor_agrav in enumerate(divergencias['Agravamento'], start=1):
-            if valor_agrav == "Sim":
-                worksheet.write(row_num, col_agravamento_idx, valor_agrav, format_agravado)
-
-    for row_num, row_data in divergencias.iterrows():
-        for col in ['Marca', 'Modelo', 'Categoria de Veículo', 'KMS a Faturar no Serviço', 'Valor a Faturar S/IVA']:
-            if col in headers and pd.isna(row_data.get(col)):
-                worksheet.write(row_num + 1, headers.index(col), '', format_faltante)
+        idx = headers.index("Agravamento")
+        for i, val in enumerate(divergencias["Agravamento"], start=1):
+            if val == "Sim":
+                worksheet.write(i, idx, val, amarelo)
 
     writer.close()
     output.seek(0)
-    data_atual = datetime.now().strftime("%Y-%m-%d")
-    return output, f"Listagem_Divergencias_{data_atual}.xlsx"
 
+    data_atual = datetime.now().strftime("%Y-%m-%d")
+    return output, f"Analise_Total_IPA_{data_atual}.xlsx"
 
 def exportar_fidelidade_excel(df):
     output = io.BytesIO()
