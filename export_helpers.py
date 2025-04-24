@@ -46,8 +46,10 @@ def exportar_listas(prontos_faturar, num_listas):
 
 
 def exportar_divergencias(df, referencia):
-    divergencias = df[df['Diferenca'] != 0].copy()
+    # Passo 1: trabalhar com todas as linhas, não só divergentes
+    divergencias = df.copy()
 
+     # Determinar Agravamento
     def verificar_agravamento(data):
         if pd.isna(data):
             return "Não"
@@ -58,6 +60,7 @@ def exportar_divergencias(df, referencia):
     divergencias['Data_Requisicao'] = pd.to_datetime(divergencias['Data_Requisicao'], errors='coerce')
     divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
 
+    # Merge com o ficheiro de referência
     if referencia is not None:
         colunas_ref = [
             'Matrícula',
