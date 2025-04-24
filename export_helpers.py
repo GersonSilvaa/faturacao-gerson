@@ -44,12 +44,10 @@ def exportar_listas(prontos_faturar, num_listas):
     data_atual = datetime.now().strftime("%Y-%m-%d")
     return output, f"Listagem_Para_Faturar_{data_atual}.xlsx"
 
-
+# -- EXPORTAR EXCEL COM ANALISE DE DIVERGENCIAS DA IPA, TODOS! --
 def exportar_divergencias(df, referencia):
-    # Copiar todos os dados (com ou sem divergência)
     divergencias = df.copy()
 
-    # Verificar agravamento
     def verificar_agravamento(data):
         if pd.isna(data):
             return "Não"
@@ -61,44 +59,42 @@ def exportar_divergencias(df, referencia):
     divergencias['Agravamento'] = divergencias['Data_Requisicao'].apply(verificar_agravamento)
 
     if referencia is not None:
-        # Corrigir nomes de colunas no ficheiro de referência
+        # Normalizar colunas (com ou sem acento)
         referencia.columns = referencia.columns.str.strip()
-        referencia = referencia.rename(columns=lambda x: x.replace("í", "i") if "Matricula" in x else x)
-
-        # Fazer o mesmo no ficheiro principal
+        referencia.columns = referencia.columns.str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
         divergencias.columns = divergencias.columns.str.strip()
-        divergencias = divergencias.rename(columns=lambda x: x.replace("í", "i") if "Matricula" in x else x)
+        divergencias.columns = divergencias.columns.str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
 
         col_ref = [
             'Matricula',
             'Marca',
             'Modelo',
-            'Categoria de Veículo',
-            'KMS a Faturar no Serviço',
+            'Categoria de Veiculo',
+            'KMS a Faturar no Servico',
             'Valor a Faturar S/IVA'
         ]
 
-        divergencias = divergencias.merge(
-            referencia[col_ref],
-            how='left',
-            left_on='Matricula',
-            right_on='Matricula'
-        )
+        colunas_existentes = [col for col in col_ref if col in referencia.columns]
+
+        if 'Matricula' in divergencias.columns and 'Matricula' in referencia.columns:
+            divergencias = divergencias.merge(
+                referencia[colunas_existentes],
+                how='left',
+                on='Matricula'
+            )
 
         from utils import calcular_upgrade
-        divergencias[['Valor Potencial', 'Diferença Upgrade', 'Sugestão Upgrade']] = divergencias.apply(
+        divergencias[['Valor Potencial', 'Diferenca Upgrade', 'Sugestao Upgrade']] = divergencias.apply(
             lambda row: pd.Series(calcular_upgrade(row)),
             axis=1
         )
 
-    # Exportar Excel
     output = io.BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     divergencias.to_excel(writer, index=False, sheet_name='Analise Total')
 
     workbook = writer.book
     worksheet = writer.sheets['Analise Total']
-
     amarelo = workbook.add_format({'bg_color': '#FFFF00'})
     headers = list(divergencias.columns)
 
@@ -113,6 +109,7 @@ def exportar_divergencias(df, referencia):
 
     data_atual = datetime.now().strftime("%Y-%m-%d")
     return output, f"Analise_Total_IPA_{data_atual}.xlsx"
+
 
 def exportar_fidelidade_excel(df):
     output = io.BytesIO()
