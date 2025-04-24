@@ -256,6 +256,9 @@ def exportar_acp_corrigido(acp_df, gestow_df):
     if "Num. Documento" in acp_df.columns:
         acp_df = acp_df.sort_values(by="Num. Documento", ascending=True)
 
+    # Remover acento do cabeçalho na exportação
+    acp_df = acp_df.rename(columns={"Matrícula": "Matricula"})
+
     # Exportar
     output = io.BytesIO()
     conteudo_csv = acp_df.to_csv(index=False, sep=";", encoding="utf-8-sig")
