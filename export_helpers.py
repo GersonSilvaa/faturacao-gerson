@@ -46,6 +46,13 @@ def exportar_listas(prontos_faturar, num_listas):
 
 
 def exportar_divergencias(df, referencia):
+    # ——————— Normalizar coluna de matrícula ———————
+    # Se vier sem acento, renomeia "Matricula" → "Matrícula"
+    if 'Matricula' in df.columns:
+        df = df.rename(columns={'Matricula': 'Matrícula'})
+
+    
+
     # Passo 1: trabalhar com todas as linhas, não só divergentes
     divergencias = df.copy()
 
@@ -70,11 +77,11 @@ def exportar_divergencias(df, referencia):
             'KMS a Faturar no Serviço',
             'Valor a Faturar S/IVA'
         ]
+        
         divergencias = divergencias.merge(
             referencia[colunas_ref],
             how='left',
-            left_on='Matricula',
-            right_on='Matrícula'
+            on='Matrícula'
         )
 
         divergencias[['Valor Potencial', 'Diferença Upgrade', 'Sugestão Upgrade']] = divergencias.apply(
